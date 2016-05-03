@@ -79,9 +79,9 @@ TOKENS
 %token <intval> NUMBER /* Simple integer */
 %token <id> IDENTIFIER /* Simple identifier */
 %token <lbls> IF WHILE /* For backpatching labels */
-%token SKIP THEN ELSE FI DO END
-%token INTEGER READ WRITE LET IN
-%token ASSGNOP
+%token SKIP ELSE OPEN_BRACE CLOSE_BRACE
+%token INTEGER READ WRITE
+%token ASSGNOP ENDFILE
 
 /*=========================================================================
 OPERATOR PRECEDENCE
@@ -97,12 +97,11 @@ GRAMMAR RULES for the Simple language
 %%
 
 program :
-    LET declarations IN { gen_code( DATA, data_location() - 1 ); }
-    commands END { gen_code( HALT, 0 ); YYACCEPT; }
+    commands ENDFILE { gen_code( HALT, 0 ); YYACCEPT; }
 ;
 
-declarations : /* empty */
-    | INTEGER id_seq IDENTIFIER '.' { install( $3 ); }
+declarations :
+    INTEGER id_seq IDENTIFIER ';' { install( $3 ); }
 ;
 
 id_seq : /* empty */
@@ -110,26 +109,27 @@ id_seq : /* empty */
 ;
 
 commands : /* empty */
-    | commands command ';'
+    | commands command
 ;
 
 command :
-    SKIP
-    | READ IDENTIFIER { gen_code( READ_INT, context_check( $2 ) ); }
-    | WRITE exp { gen_code( WRITE_INT, 0 ); }
-    | IDENTIFIER ASSGNOP exp { gen_code( STORE, context_check( $1 ) ); }
+    SKIP ';'
+    | declarations { gen_code( DATA, data_location() - 1 ); }
+    | READ IDENTIFIER ';' { gen_code( READ_INT, context_check( $2 ) ); }
+    | WRITE exp ';' { gen_code( WRITE_INT, 0 ); }
+    | IDENTIFIER ASSGNOP exp ';' { gen_code( STORE, context_check( $1 ) ); }
     | IF bool_exp { $1 = (struct lbs *) newlblrec(); $1->for_jmp_false = reserve_loc(); }
-    THEN commands { $1->for_goto = reserve_loc(); } ELSE {
+    OPEN_BRACE commands CLOSE_BRACE { $1->for_goto = reserve_loc(); } ELSE {
         back_patch( $1->for_jmp_false, JMP_FALSE, gen_label() );
-    } commands FI { back_patch( $1->for_goto, GOTO, gen_label() ); }
+    } OPEN_BRACE commands CLOSE_BRACE { back_patch( $1->for_goto, GOTO, gen_label() ); }
     | WHILE { $1 = (struct lbs *) newlblrec(); $1->for_goto = gen_label(); }
-    bool_exp { $1->for_jmp_false = reserve_loc(); } DO commands END { gen_code( GOTO, $1->for_goto );
+    bool_exp { $1->for_jmp_false = reserve_loc(); } OPEN_BRACE commands CLOSE_BRACE { gen_code( GOTO, $1->for_goto );
     back_patch( $1->for_jmp_false, JMP_FALSE, gen_label() ); }
 ;
 
 bool_exp :
     exp '<' exp { gen_code( LT, 0 ); }
-    | exp '=' exp { gen_code( EQ, 0 ); }
+    | exp "==" exp { gen_code( EQ, 0 ); }
     | exp '>' exp { gen_code( GT, 0 ); }
 ;
 
