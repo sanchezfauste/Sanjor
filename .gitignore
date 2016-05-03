@@ -26,3 +26,15 @@
 *.exe
 *.out
 *.app
+
+# Binaries
+assembler
+dissas
+VM
+sanjor
+
+# Temporal files
+lex.yy.c
+sanjor.output
+sanjor.tab.c
+sanjor.tab.h
