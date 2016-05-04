@@ -81,7 +81,7 @@ TOKENS
 %token <lbls> IF WHILE /* For backpatching labels */
 %token SKIP ELSE OPEN_BRACE CLOSE_BRACE
 %token INTEGER READ WRITE
-%token ASSGNOP ENDFILE
+%token ASSGNOP
 
 /*=========================================================================
 OPERATOR PRECEDENCE
@@ -97,7 +97,7 @@ GRAMMAR RULES for the Simple language
 %%
 
 program :
-    commands ENDFILE { gen_code( HALT, 0 ); YYACCEPT; }
+    commands { gen_code( HALT, 0 ); YYACCEPT; }
 ;
 
 declarations :

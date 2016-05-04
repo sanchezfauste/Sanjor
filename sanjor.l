@@ -43,13 +43,12 @@ while { return(WHILE); }
 write { return(WRITE); }
 {ID} { yylval.id = (char *) strdup(yytext); return(IDENTIFIER); }
 [ \t\n]+ /* eat up whitespace */
-"END" { return(ENDFILE); }
-. { return(yytext[0]);}
+. { return(yytext[0]); }
 
 %%
 
 int yywrap(void){
-    return 0;
+    return 1;
 }
 
 /************************** End Scanner File *****************************/ 
