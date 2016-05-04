@@ -118,8 +118,8 @@ commands : /* empty */
 command :
     SKIP ';'
     | { nvars = 0; } declarations {
-        gen_code( DATA, nvars - 1 );
-        data_location();
+        gen_code( DATA, nvars );
+        //data_location();
     }
     | READ IDENTIFIER ';' { gen_code( READ_INT, context_check( $2 ) ); }
     | WRITE exp ';' { gen_code( WRITE_INT, 0 ); }
