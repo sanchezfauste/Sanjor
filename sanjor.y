@@ -60,6 +60,9 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
         return identifier->offset;
     }
 
+    /* Used to count declarated vars on var declaration sentence */
+    int nvars;
+
 %}
 
 /*=========================================================================
@@ -101,11 +104,11 @@ program :
 ;
 
 declarations :
-    INTEGER id_seq IDENTIFIER ';' { install( $3 ); }
+    INTEGER id_seq IDENTIFIER ';' { install( $3 ); nvars += 1; }
 ;
 
 id_seq : /* empty */
-    | id_seq IDENTIFIER ',' { install( $2 ); }
+    | id_seq IDENTIFIER ',' { install( $2 ); nvars += 1; }
 ;
 
 commands : /* empty */
@@ -114,7 +117,10 @@ commands : /* empty */
 
 command :
     SKIP ';'
-    | declarations { gen_code( DATA, data_location() - 1 ); }
+    | { nvars = 0; } declarations {
+        gen_code( DATA, nvars - 1 );
+        data_location();
+    }
     | READ IDENTIFIER ';' { gen_code( READ_INT, context_check( $2 ) ); }
     | WRITE exp ';' { gen_code( WRITE_INT, 0 ); }
     | IDENTIFIER ASSGNOP exp ';' { gen_code( STORE, context_check( $1 ) ); }
