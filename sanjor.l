@@ -40,6 +40,25 @@ REGULAR EXPRESSIONS defining the tokens for the Simple language
 <comment_block>{comment_block_end}    BEGIN(0);
 <comment_block>(.|\n)
 
+#include(\ |\t)*\"    BEGIN(include);
+<include>[^\"]*\" {
+    yytext[yyleng - 1] = '\0';
+    FILE* file = fopen(yytext, "r");
+    if (!file) {
+        fprintf(stderr, "--> ERROR: Can't open %s\n", yytext);
+    } else {
+        yypush_buffer_state(yy_create_buffer(file, YY_BUF_SIZE));
+    }
+    BEGIN(0);
+}
+
+<<EOF>> {
+    yypop_buffer_state();
+    if (!YY_CURRENT_BUFFER) {
+        yyterminate();
+    }
+}
+
 "=" { return(ASSGNOP); }
 {DIGIT}+ {
     yylval.intval = atoi( yytext );
