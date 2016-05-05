@@ -26,7 +26,7 @@ int stack[MAX_MEMORY];
 int pc = 0; 
 struct instruction ir; 
 int ar = 0; 
-int top = 0; 
+int top = -1; 
 char ch; 
 
 #ifndef NDEBUG
@@ -43,6 +43,7 @@ void print_stack() {
 		}
 		if (i > 0) printf("\n    ├─────────────────┤\n");
 	}
+	if (top == -1) printf("    │   -- EMPTY --   │");
 	printf("\n    └─────────────────┘\n");
 }
 #endif
