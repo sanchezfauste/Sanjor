@@ -34,6 +34,21 @@ REGULAR EXPRESSIONS defining the tokens for the Simple language
 }
 "{" { return(OPEN_BRACE); }
 "}" { return(CLOSE_BRACE); }
+"+" { return ADD_; }
+"-" { return SUB_; }
+"*" { return MUL_; }
+"/" { return DIV_; }
+"%" { return MOD_; }
+"(" { return LPAR; }
+")" { return RPAR; }
+"==" { return EQ_; }
+"!=" { return NQ_; }
+">" { return GT_; }
+"<" { return LT_; }
+">=" { return GE_; }
+"<=" { return LE_; }
+"," { return(COMMA); }
+";" { return(SEMICOLON); }
 if { return(IF); }
 else { return(ELSE); }
 int { return(INTEGER); }
@@ -43,7 +58,6 @@ while { return(WHILE); }
 write { return(WRITE); }
 {ID} { yylval.id = (char *) strdup(yytext); return(IDENTIFIER); }
 [ \t\n]+ /* eat up whitespace */
-. { return(yytext[0]); }
 
 %%
 

@@ -85,13 +85,17 @@ TOKENS
 %token SKIP ELSE OPEN_BRACE CLOSE_BRACE
 %token INTEGER READ WRITE
 %token ASSGNOP
+%token EQ_ NQ_ GT_ LT_ LE_ GE_
+%token ADD_ SUB_ MUL_ DIV_ PWR_ MOD_
+%token LPAR RPAR
+%token COMMA SEMICOLON
 
 /*=========================================================================
 OPERATOR PRECEDENCE
 =========================================================================*/
-%left '-' '+'
-%left '*' '/'
-%right '^'
+%left SUB_ ADD_
+%left MUL_ DIV_ MOD_
+%right PWR_
 
 /*=========================================================================
 GRAMMAR RULES for the Simple language
@@ -104,11 +108,11 @@ program :
 ;
 
 declarations :
-    INTEGER id_seq IDENTIFIER ';' { install( $3 ); nvars += 1; }
+    INTEGER id_seq IDENTIFIER SEMICOLON { install( $3 ); nvars += 1; }
 ;
 
 id_seq : /* empty */
-    | id_seq IDENTIFIER ',' { install( $2 ); nvars += 1; }
+    | id_seq IDENTIFIER COMMA { install( $2 ); nvars += 1; }
 ;
 
 commands : /* empty */
@@ -116,38 +120,39 @@ commands : /* empty */
 ;
 
 command :
-    SKIP ';'
+    SKIP SEMICOLON
     | { nvars = 0; } declarations {
         gen_code( DATA, nvars );
         //data_location();
     }
-    | READ IDENTIFIER ';' { gen_code( READ_INT, context_check( $2 ) ); }
-    | WRITE exp ';' { gen_code( WRITE_INT, 0 ); }
-    | IDENTIFIER ASSGNOP exp ';' { gen_code( STORE, context_check( $1 ) ); }
-    | IF bool_exp { $1 = (struct lbs *) newlblrec(); $1->for_jmp_false = reserve_loc(); }
+    | READ IDENTIFIER SEMICOLON { gen_code( READ_INT, context_check( $2 ) ); }
+    | WRITE exp SEMICOLON { gen_code( WRITE_INT, 0 ); }
+    | IDENTIFIER ASSGNOP exp SEMICOLON { gen_code( STORE, context_check( $1 ) ); }
+    | IF LPAR bool_exp RPAR { $1 = (struct lbs *) newlblrec(); $1->for_jmp_false = reserve_loc(); }
     OPEN_BRACE commands CLOSE_BRACE { $1->for_goto = reserve_loc(); } ELSE {
         back_patch( $1->for_jmp_false, JMP_FALSE, gen_label() );
     } OPEN_BRACE commands CLOSE_BRACE { back_patch( $1->for_goto, GOTO, gen_label() ); }
     | WHILE { $1 = (struct lbs *) newlblrec(); $1->for_goto = gen_label(); }
-    bool_exp { $1->for_jmp_false = reserve_loc(); } OPEN_BRACE commands CLOSE_BRACE { gen_code( GOTO, $1->for_goto );
+    LPAR bool_exp RPAR { $1->for_jmp_false = reserve_loc(); }
+    OPEN_BRACE commands CLOSE_BRACE { gen_code( GOTO, $1->for_goto );
     back_patch( $1->for_jmp_false, JMP_FALSE, gen_label() ); }
 ;
 
 bool_exp :
-    exp '<' exp { gen_code( LT, 0 ); }
-    | exp "==" exp { gen_code( EQ, 0 ); }
-    | exp '>' exp { gen_code( GT, 0 ); }
+    exp LT_ exp { gen_code( LT, 0 ); }
+    | exp EQ_ exp { gen_code( EQ, 0 ); }
+    | exp GT_ exp { gen_code( GT, 0 ); }
 ;
 
 exp :
     NUMBER { gen_code( LD_INT, $1 ); }
     | IDENTIFIER { gen_code( LD_VAR, context_check( $1 ) ); }
-    | exp '+' exp { gen_code( ADD, 0 ); }
-    | exp '-' exp { gen_code( SUB, 0 ); }
-    | exp '*' exp { gen_code( MULT, 0 ); }
-    | exp '/' exp { gen_code( DIV, 0 ); }
-    | exp '^' exp { gen_code( PWR, 0 ); }
-    | '(' exp ')'
+    | exp ADD_ exp { gen_code( ADD, 0 ); }
+    | exp SUB_ exp { gen_code( SUB, 0 ); }
+    | exp MUL_ exp { gen_code( MULT, 0 ); }
+    | exp DIV_ exp { gen_code( DIV, 0 ); }
+    | exp PWR_ exp { gen_code( PWR, 0 ); }
+    | LPAR exp RPAR
 ;
 
 %%
