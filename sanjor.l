@@ -19,13 +19,26 @@ C-libraries and Token definitions
 /*========================================================================= 
 TOKEN Definitions 
 =========================================================================*/ 
-DIGIT [0-9] 
-ID [a-z]([a-zA-Z0-9]|_)* 
+DIGIT [0-9]
+ID [a-z]([a-zA-Z0-9]|_)*
+comment_block_begin \/\*
+comment_block_end \*\/
+comment_line \/\/(\\\n|.)*\n
+
+/*=========================================================================
+States Definitions
+=========================================================================*/
+%x include comment_block
 
 /*========================================================================= 
 REGULAR EXPRESSIONS defining the tokens for the Simple language 
 =========================================================================*/ 
-%% 
+%%
+
+{comment_line}
+{comment_block_begin}    BEGIN(comment_block);
+<comment_block>{comment_block_end}    BEGIN(0);
+<comment_block>(.|\n)
 
 "=" { return(ASSGNOP); }
 {DIGIT}+ {
