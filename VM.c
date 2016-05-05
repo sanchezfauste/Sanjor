@@ -15,6 +15,9 @@ int main( int argc, char *argv[] ) {
   }
   
   read_bytecode( argv[1] );
+  #ifndef NDEBUG
+    printf("[ INFO ] Debug mode enabled. Pres INTRO to execute next INST.\n");
+  #endif
   fetch_execute_cycle();
 
   return 0;

@@ -29,24 +29,44 @@ int ar = 0;
 int top = 0; 
 char ch; 
 
+#ifndef NDEBUG
+void print_stack() {
+	int i;
+	printf("    ┌───── STACK ─────┐\n");
+	for (i = top; i >= 0; i--) {
+		printf("%3i │ %-15i │", i, stack[i]);
+		if (i == top) {
+			printf(" <-- top");
+		}
+		if (i == ar) {
+			printf(" <-- ar");
+		}
+		if (i > 0) printf("\n    ├─────────────────┤\n");
+	}
+	printf("\n    └─────────────────┘\n");
+}
+#endif
+
 /*========================================================================= 
   Fetch Execute Cycle 
   =========================================================================*/ 
 void fetch_execute_cycle() 
 { 
-  do { 
-#ifndef NDEBUG    
-    printf( "PC = %3d IR.arg = %8d AR = %3d Top = %3d,%8d\n", 
-	    pc, ir.arg, ar, top, stack[top]); 
-#endif
+  do {
     /* Fetch */ 
-    ir = code[pc++]; 
+    ir = code[pc++];
     /* Execute */ 
+	#ifndef NDEBUG
+		char unused;
+		print_stack();
+		scanf("%c", &unused);
+		printf("\n[ INST ] %3d: %-10s %4i\n", pc, op_name[(int) ir.op], ir.arg);
+	#endif
     switch (ir.op) { 
-    case HALT : printf( "halt\n" ); break; 
-    case READ_INT : printf( "Input: " ); 
+    case HALT : printf( "--> halt\n" ); break; 
+    case READ_INT : printf( "--> Input: " ); 
       scanf( "%d", &stack[ar+ir.arg] ); break; 
-    case WRITE_INT : printf( "Output: %d\n", stack[top--] ); break; 
+    case WRITE_INT : printf( "--> Output: %d\n", stack[top--] ); break; 
     case STORE : stack[ir.arg] = stack[top--]; break; 
     case JMP_FALSE : if ( stack[top--] == 0 ) 
 	pc = ir.arg; 
