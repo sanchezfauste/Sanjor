@@ -15,11 +15,16 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
     #include "ST.h" /* Symbol Table */
     #include "SM.h" /* Stack Machine */
     #include "CG.h" /* Code Generator */
+    #include "environment.h"
+    #include "functions.h"
 
     #define YYDEBUG 1 /* For Debugging */
 
     int yylex();
     void yyerror(const char*);
+
+    Environment *current_env;
+    Functions *functions;
 
     int errors; /* Error Count */
     /*-------------------------------------------------------------------------
@@ -41,12 +46,9 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
     -------------------------------------------------------------------------*/
     void install ( char *sym_name )
     {
-        symrec *s = getsym (sym_name);
-        if (s == 0)
-            s = putsym (sym_name);
-        else {
+        if (!current_env->add_var(sym_name)) {
             char message[ 100 ];
-            sprintf( message, "%s is already defined\n", sym_name );
+            sprintf( message, "%s is already defined!\n", sym_name );
             yyerror( message );
         }
     }
@@ -56,8 +58,14 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
     -------------------------------------------------------------------------*/
     int context_check( char *sym_name )
     {
-        symrec *identifier = getsym( sym_name );
-        return identifier->offset;
+        if (current_env->check_var(sym_name)) {
+            return current_env->get_var(sym_name);
+        } else {
+            char message[ 100 ];
+            sprintf( message, "%s is not defined!\n", sym_name );
+            yyerror( message );
+            return -1;
+        }
     }
 
     /* Used to count declarated vars on var declaration sentence */
@@ -119,6 +127,20 @@ commands : /* empty */
     | commands command
 ;
 
+parameters :
+    param_list exp {
+        nvars += 1;
+        gen_code( STORE, nvars + 3 + current_env->get_nvars() );
+    }
+;
+
+param_list : /* empty */
+    | param_list exp COMMA {
+        nvars += 1;
+        gen_code( STORE, nvars + 3 + current_env->get_nvars() );
+    }
+;
+
 command :
     SKIP SEMICOLON
     | { nvars = 0; } declarations {
@@ -136,6 +158,11 @@ command :
     LPAR bool_exp RPAR { $1->for_jmp_false = reserve_loc(); }
     OPEN_BRACE commands CLOSE_BRACE { gen_code( GOTO, $1->for_goto );
     back_patch( $1->for_jmp_false, JMP_FALSE, gen_label() ); }
+    | IDENTIFIER ASSGNOP IDENTIFIER LPAR { nvars = 0; } parameters RPAR SEMICOLON {
+        gen_code( CALL, functions->get_function_offset($3) );
+        gen_code( STORE, context_check( $1 ) );
+        gen_code( POP, nvars );
+    }
 ;
 
 bool_exp :
@@ -171,6 +198,8 @@ int main( int argc, char *argv[] )
         printf("usage <input-file> <output-file>\n");
         return -1;
     }
+    current_env = new Environment(NULL);
+    functions = new Functions();
     yyin = fopen( argv[1], "r" );
     /*yydebug = 1;*/
     errors = 0;

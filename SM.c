@@ -11,7 +11,7 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
 char const *op_name[] = {
 	"halt", "store", "jmp_false", "goto", "call", "ret", "data", "ld_int",
 	"ld_var", "in_int", "out_int", "lt", "eq", "gt", "add", "sub", "mult",
-	"div", "pwr"
+	"div", "pwr", "pop"
 }; 
 
 /* CODE Array */ 
@@ -68,13 +68,22 @@ void fetch_execute_cycle()
     case READ_INT : printf( "--> Input: " ); 
       scanf( "%d", &stack[ar+ir.arg] ); break; 
     case WRITE_INT : printf( "--> Output: %d\n", stack[top--] ); break; 
-    case STORE : stack[ir.arg] = stack[top--]; break; 
+    case STORE : stack[ar+ir.arg] = stack[top--]; break; 
     case JMP_FALSE : if ( stack[top--] == 0 ) 
 	pc = ir.arg; 
       break; 
     case GOTO : pc = ir.arg; break; 
-    case CALL : stack[++top] = pc+1; pc = ir.arg; break;
-    case RET : pc = stack[top--]; break;
+    case CALL :
+        top++; //For store return value
+        stack[top++] = pc+1;
+        stack[top++] = ar;
+        ar = top + 1;
+        pc = ir.arg;
+        break;
+    case RET :
+        ar = stack[top--];
+        pc = stack[top--];
+        break;
     case DATA : top = top + ir.arg; break; 
     case LD_INT : stack[++top] = ir.arg; break; 
     case LD_VAR : stack[++top] = stack[ar+ir.arg]; break; 
@@ -105,6 +114,7 @@ void fetch_execute_cycle()
     case PWR : stack[top-1] = stack[top-1] * stack[top]; 
       top--; 
       break; 
+    case POP : top -= ir.arg; break;
     default : printf( "%d Internal Error: Memory Dump\n", ir.op ); 
       break; 
     } 
