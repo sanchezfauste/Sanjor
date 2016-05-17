@@ -13,8 +13,8 @@ dissas : dissas.c SM.c CG.c
 VM : SM.c VM.c CG.c
 	$(CC) $(CFLAGS) CG.c SM.c VM.c -o VM -lm
 
-$(TARGET) : $(TARGET).tab.c lex.yy.c SM.c CG.c ST.c
-	g++ $(CFLAGS) $(TARGET).tab.c lex.yy.c SM.c CG.c ST.c -lm -o $(TARGET) 
+$(TARGET) : $(TARGET).tab.c lex.yy.c SM.c CG.c ST.c environment.cpp functions.cpp
+	g++ $(CFLAGS) $(TARGET).tab.c lex.yy.c SM.c CG.c ST.c environment.cpp functions.cpp -lm -o $(TARGET) 
 
 $(TARGET).tab.h $(TARGET).tab.c : $(TARGET).y
 	bison -dv $(TARGET).y 
