@@ -91,7 +91,7 @@ void create_command( char * text ) {
 
 Identifier [a-zA-Z][a-zA-Z0-9]*
 Command [a-z_]+
-Integer [0-9]+
+Integer \-?[0-9]+
 
 %x PARAM
 

@@ -88,6 +88,7 @@ read { return(READ); }
 skip { return(SKIP); }
 while { return(WHILE); }
 write { return(WRITE); }
+"return" { return(RETURN); }
 {ID} { yylval.id = (char *) strdup(yytext); return(IDENTIFIER); }
 [ \t\n]+ /* eat up whitespace */
 

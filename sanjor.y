@@ -69,7 +69,9 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
     }
 
     /* Used to count declarated vars on var declaration sentence */
-    int nvars;
+    int nvars = 0;
+
+    int offset_before_function;
 
 %}
 
@@ -97,6 +99,7 @@ TOKENS
 %token ADD_ SUB_ MUL_ DIV_ PWR_ MOD_
 %token LPAR RPAR
 %token COMMA SEMICOLON
+%token RETURN
 
 /*=========================================================================
 OPERATOR PRECEDENCE
@@ -116,11 +119,16 @@ program :
 ;
 
 declarations :
-    INTEGER id_seq IDENTIFIER SEMICOLON { install( $3 ); nvars += 1; }
+    INTEGER IDENTIFIER { install( $2 ); nvars += 1; } id_seq SEMICOLON
 ;
 
 id_seq : /* empty */
-    | id_seq IDENTIFIER COMMA { install( $2 ); nvars += 1; }
+    | id_seq COMMA IDENTIFIER { install( $3 ); nvars += 1; }
+;
+
+function_vars :
+    | INTEGER IDENTIFIER function_vars { install( $2 ); nvars += 1; }
+    | COMMA INTEGER IDENTIFIER function_vars { install( $3 ); nvars += 1; }
 ;
 
 commands : /* empty */
@@ -128,23 +136,24 @@ commands : /* empty */
 ;
 
 parameters :
-    param_list exp {
+    | param_list exp {
+        gen_code( STORE_TOF, nvars + 3 );
         nvars += 1;
-        gen_code( STORE, nvars + 3 + current_env->get_nvars() );
     }
 ;
 
 param_list : /* empty */
     | param_list exp COMMA {
+        gen_code( STORE_TOF, nvars + 3 );
         nvars += 1;
-        gen_code( STORE, nvars + 3 + current_env->get_nvars() );
     }
 ;
 
 command :
     SKIP SEMICOLON
-    | { nvars = 0; } declarations {
+    | declarations {
         gen_code( DATA, nvars );
+        nvars = 0;
         //data_location();
     }
     | READ IDENTIFIER SEMICOLON { gen_code( READ_INT, context_check( $2 ) ); }
@@ -158,11 +167,20 @@ command :
     LPAR bool_exp RPAR { $1->for_jmp_false = reserve_loc(); }
     OPEN_BRACE commands CLOSE_BRACE { gen_code( GOTO, $1->for_goto );
     back_patch( $1->for_jmp_false, JMP_FALSE, gen_label() ); }
-    | IDENTIFIER ASSGNOP IDENTIFIER LPAR { nvars = 0; } parameters RPAR SEMICOLON {
-        gen_code( CALL, functions->get_function_offset($3) );
-        gen_code( STORE, context_check( $1 ) );
-        gen_code( POP, nvars );
+    | RETURN exp SEMICOLON {
+        gen_code( STORE, -3 );
+        gen_code( POP, current_env->get_nvars() );
+        gen_code( RET, 0 );
     }
+    | INTEGER IDENTIFIER LPAR {
+        offset_before_function = reserve_loc();
+        current_env = new Environment(current_env);
+        functions->add_function($2, gen_label());
+    } function_vars RPAR OPEN_BRACE { gen_code( DATA, nvars ); nvars = 0; }
+        commands CLOSE_BRACE {
+            current_env = current_env->get_previous_environment();
+            back_patch( offset_before_function, GOTO, gen_label() );
+        }
 ;
 
 bool_exp :
@@ -180,6 +198,9 @@ exp :
     | exp DIV_ exp { gen_code( DIV, 0 ); }
     | exp PWR_ exp { gen_code( PWR, 0 ); }
     | LPAR exp RPAR
+    | IDENTIFIER LPAR parameters { nvars = 0; } RPAR {
+        gen_code( CALL, functions->get_function_offset($1) );
+    }
 ;
 
 %%

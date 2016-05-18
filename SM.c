@@ -11,7 +11,7 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
 char const *op_name[] = {
 	"halt", "store", "jmp_false", "goto", "call", "ret", "data", "ld_int",
 	"ld_var", "in_int", "out_int", "lt", "eq", "gt", "add", "sub", "mult",
-	"div", "pwr", "pop"
+	"div", "pwr", "pop", "store_tof"
 }; 
 
 /* CODE Array */ 
@@ -61,7 +61,7 @@ void fetch_execute_cycle()
 		char unused;
 		print_stack();
 		scanf("%c", &unused);
-		printf("\n[ INST ] %3d: %-10s %4i\n", pc, op_name[(int) ir.op], ir.arg);
+		printf("\n[ INST ] %3d: %-10s %4i\n", pc-1, op_name[(int) ir.op], ir.arg);
 	#endif
     switch (ir.op) { 
     case HALT : printf( "--> halt\n" ); break; 
@@ -69,14 +69,15 @@ void fetch_execute_cycle()
       scanf( "%d", &stack[ar+ir.arg] ); break; 
     case WRITE_INT : printf( "--> Output: %d\n", stack[top--] ); break; 
     case STORE : stack[ar+ir.arg] = stack[top--]; break; 
+	case STORE_TOF : stack[top+ir.arg] = stack[top]; top--; break; 
     case JMP_FALSE : if ( stack[top--] == 0 ) 
 	pc = ir.arg; 
       break; 
     case GOTO : pc = ir.arg; break; 
     case CALL :
         top++; //For store return value
-        stack[top++] = pc+1;
-        stack[top++] = ar;
+        stack[++top] = pc;
+        stack[++top] = ar;
         ar = top + 1;
         pc = ir.arg;
         break;
