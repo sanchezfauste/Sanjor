@@ -48,7 +48,7 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
     {
         if (!current_env->add_var(sym_name)) {
             char message[ 100 ];
-            sprintf( message, "%s is already defined!\n", sym_name );
+            sprintf( message, "var <%s> is already defined", sym_name );
             yyerror( message );
         }
     }
@@ -62,7 +62,7 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
             return current_env->get_var(sym_name);
         } else {
             char message[ 100 ];
-            sprintf( message, "%s is not defined!\n", sym_name );
+            sprintf( message, "var <%s> is not defined", sym_name );
             yyerror( message );
             return -1;
         }
@@ -174,7 +174,11 @@ command :
         $1 = (struct lbs *) newlblrec();
         $1->for_goto = reserve_loc();
         current_env = new Environment(current_env);
-        functions->add_function($2, gen_label());
+        if (!functions->add_function($2, gen_label())) {
+            char message[ 100 ];
+            sprintf( message, "function <%s> is already defined", $2 );
+            yyerror( message );
+        }
     } function_vars RPAR OPEN_BRACE { gen_code( DATA, nvars ); nvars = 0; }
         commands CLOSE_BRACE {
             current_env = current_env->get_previous_environment();
@@ -199,7 +203,13 @@ exp :
     | exp PWR_ exp { gen_code( PWR, 0 ); }
     | LPAR exp RPAR
     | IDENTIFIER LPAR parameters { nvars = 0; } RPAR {
-        gen_code( CALL, functions->get_function_offset($1) );
+        int function_offset = functions->get_function_offset($1);
+        if (function_offset == -1) {
+            char message[ 100 ];
+            sprintf( message, "function <%s> is not defined", $1 );
+            yyerror( message );
+        }
+        gen_code( CALL, function_offset );
     }
 ;
 
@@ -243,6 +253,6 @@ YYERROR
 void yyerror ( const char *s ) /* Called by yyparse on error */
 {
     errors++; 
-    printf ("--> %s on line %i\n", s, yylineno);
+    printf ("--> Error on line %i: %s\n", yylineno, s);
 } 
 /**************************** End Grammar File ***************************/
