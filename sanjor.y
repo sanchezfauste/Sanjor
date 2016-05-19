@@ -71,8 +71,6 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
     /* Used to count declarated vars on var declaration sentence */
     int nvars = 0;
 
-    int offset_before_function;
-
 %}
 
 /*=========================================================================
@@ -91,9 +89,9 @@ TOKENS
 %start program
 %token <intval> NUMBER /* Simple integer */
 %token <id> IDENTIFIER /* Simple identifier */
-%token <lbls> IF WHILE /* For backpatching labels */
+%token <lbls> IF WHILE INTEGER /* For backpatching labels */
 %token SKIP ELSE OPEN_BRACE CLOSE_BRACE
-%token INTEGER READ WRITE
+%token READ WRITE
 %token ASSGNOP
 %token EQ_ NQ_ GT_ LT_ LE_ GE_
 %token ADD_ SUB_ MUL_ DIV_ PWR_ MOD_
@@ -162,24 +160,26 @@ command :
     | IF LPAR bool_exp RPAR { $1 = (struct lbs *) newlblrec(); $1->for_jmp_false = reserve_loc(); }
     OPEN_BRACE commands CLOSE_BRACE { $1->for_goto = reserve_loc(); } ELSE {
         back_patch( $1->for_jmp_false, JMP_FALSE, gen_label() );
-    } OPEN_BRACE commands CLOSE_BRACE { back_patch( $1->for_goto, GOTO, gen_label() ); }
+    } OPEN_BRACE commands CLOSE_BRACE { back_patch( $1->for_goto, GOTO, gen_label() ); free($1); }
     | WHILE { $1 = (struct lbs *) newlblrec(); $1->for_goto = gen_label(); }
     LPAR bool_exp RPAR { $1->for_jmp_false = reserve_loc(); }
     OPEN_BRACE commands CLOSE_BRACE { gen_code( GOTO, $1->for_goto );
-    back_patch( $1->for_jmp_false, JMP_FALSE, gen_label() ); }
+    back_patch( $1->for_jmp_false, JMP_FALSE, gen_label() ); free($1); }
     | RETURN exp SEMICOLON {
         gen_code( STORE, -3 );
         gen_code( POP, current_env->get_nvars() );
         gen_code( RET, 0 );
     }
     | INTEGER IDENTIFIER LPAR {
-        offset_before_function = reserve_loc();
+        $1 = (struct lbs *) newlblrec();
+        $1->for_goto = reserve_loc();
         current_env = new Environment(current_env);
         functions->add_function($2, gen_label());
     } function_vars RPAR OPEN_BRACE { gen_code( DATA, nvars ); nvars = 0; }
         commands CLOSE_BRACE {
             current_env = current_env->get_previous_environment();
-            back_patch( offset_before_function, GOTO, gen_label() );
+            back_patch( $1->for_goto, GOTO, gen_label() );
+            free($1);
         }
 ;
 
