@@ -6,6 +6,7 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
 
 %option nounput
 %option noinput
+%option yylineno
 
 /*========================================================================= 
 C-libraries and Token definitions 

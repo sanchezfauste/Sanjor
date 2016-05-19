@@ -212,6 +212,7 @@ MAIN
 =========================================================================*/
 
 extern FILE *yyin;
+extern int yylineno;
 
 int main( int argc, char *argv[] )
 {
@@ -242,6 +243,6 @@ YYERROR
 void yyerror ( const char *s ) /* Called by yyparse on error */
 {
     errors++; 
-    printf ("%s\n", s);
+    printf ("--> %s on line %i\n", s, yylineno);
 } 
 /**************************** End Grammar File ***************************/
