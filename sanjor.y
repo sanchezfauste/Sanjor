@@ -44,9 +44,9 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
     /*-------------------------------------------------------------------------
     Install identifier & check if previously defined.
     -------------------------------------------------------------------------*/
-    void install ( char *sym_name, int size = 1 )
+    void install ( char *sym_name, int size = 1, bool is_const = false )
     {
-        if (!current_env->add_var(sym_name, size)) {
+        if (!current_env->add_var(sym_name, size, is_const)) {
             char message[ 100 ];
             sprintf( message, "var <%s> is already defined", sym_name );
             yyerror( message );
@@ -104,6 +104,7 @@ TOKENS
 %token LPAR RPAR LBRACKET RBRACKET
 %token COMMA SEMICOLON
 %token RETURN LENGTH
+%token CONST
 
 /*=========================================================================
 OPERATOR PRECEDENCE
@@ -124,6 +125,7 @@ program :
 
 declarations :
     INTEGER IDENTIFIER { install( $2 ); nvars += 1; } id_seq SEMICOLON
+    | CONST INTEGER IDENTIFIER { install( $3, 1, true ); nvars += 1; } SEMICOLON
     | INTEGER IDENTIFIER LBRACKET NUMBER RBRACKET { install( $2, $4 ); nvars += $4; } id_seq SEMICOLON
 ;
 
@@ -164,7 +166,15 @@ command :
     }
     | READ IDENTIFIER SEMICOLON { gen_code( READ_INT, context_check( $2 ) ); }
     | WRITE exp SEMICOLON { gen_code( WRITE_INT, 0 ); }
-    | IDENTIFIER ASSGNOP exp SEMICOLON { gen_code( STORE, context_check( $1 ) ); }
+    | IDENTIFIER ASSGNOP exp SEMICOLON {
+        if (current_env->check_var_const($1) && current_env->check_var_defined($1)) {
+            char message[ 100 ];
+            sprintf( message, "trying to modify const var! var <%s> is const", $1 );
+            yyerror( message );
+        }
+        current_env->set_var_defined($1);
+        gen_code( STORE, context_check( $1 ) );
+    }
     | IDENTIFIER LBRACKET exp RBRACKET ASSGNOP exp SEMICOLON { gen_code( STORE_ARRAY, context_check( $1 ) ); }
     | IF LPAR bool_exp RPAR { $1 = (struct lbs *) newlblrec(); $1->for_jmp_false = reserve_loc(); }
     OPEN_BRACE commands CLOSE_BRACE { $1->for_goto = reserve_loc(); } ELSE {
