@@ -12,8 +12,8 @@ class Functions {
 
 public:
 
-	int get_function_offset(const char *var);
-	bool add_function(const char *var, int offset);
+	int get_function_offset(const char *function);
+	bool add_function(const char *function, int offset);
 
 };
 

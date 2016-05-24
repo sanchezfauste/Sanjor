@@ -4,19 +4,19 @@
 
 using namespace std;
 
-int Functions::get_function_offset(const char *var) {
-	if (functions.count(string(var))) {
-		return functions[string(var)];
+int Functions::get_function_offset(const char *function) {
+	if (functions.count(string(function))) {
+		return functions[string(function)];
 	} else {
 		return -1;
 	}
 }
 
-bool Functions::add_function(const char *var, int offset) {
-	if (functions.count(string(var))) {
+bool Functions::add_function(const char *function, int offset) {
+	if (functions.count(string(function))) {
 		return false;
 	} else {
-		functions[string(var)] = offset;
+		functions[string(function)] = offset;
 		return true;
 	}
 }
