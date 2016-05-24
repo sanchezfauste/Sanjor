@@ -44,9 +44,9 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
     /*-------------------------------------------------------------------------
     Install identifier & check if previously defined.
     -------------------------------------------------------------------------*/
-    void install ( char *sym_name )
+    void install ( char *sym_name, int size = 1 )
     {
-        if (!current_env->add_var(sym_name)) {
+        if (!current_env->add_var(sym_name, size)) {
             char message[ 100 ];
             sprintf( message, "var <%s> is already defined", sym_name );
             yyerror( message );
@@ -56,10 +56,16 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
     /*-------------------------------------------------------------------------
     If identifier is defined, generate code
     -------------------------------------------------------------------------*/
-    int context_check( char *sym_name )
+    int context_check( char *sym_name, int offset = 0 )
     {
         if (current_env->check_var(sym_name)) {
-            return current_env->get_var(sym_name);
+            if (!current_env->check_var_offset(sym_name, offset)) {
+                char message[ 100 ];
+                sprintf( message, "try to accessing out of bounds var <%s>", sym_name );
+                yyerror( message );
+                return -1;
+            }
+            return current_env->get_var(sym_name, offset);
         } else {
             char message[ 100 ];
             sprintf( message, "var <%s> is not defined", sym_name );
@@ -95,9 +101,9 @@ TOKENS
 %token ASSGNOP
 %token EQ_ NQ_ GT_ LT_ LE_ GE_
 %token ADD_ SUB_ MUL_ DIV_ PWR_ MOD_
-%token LPAR RPAR
+%token LPAR RPAR LBRACKET RBRACKET
 %token COMMA SEMICOLON
-%token RETURN
+%token RETURN LENGTH
 
 /*=========================================================================
 OPERATOR PRECEDENCE
@@ -118,10 +124,12 @@ program :
 
 declarations :
     INTEGER IDENTIFIER { install( $2 ); nvars += 1; } id_seq SEMICOLON
+    | INTEGER IDENTIFIER LBRACKET NUMBER RBRACKET { install( $2, $4 ); nvars += $4; } id_seq SEMICOLON
 ;
 
 id_seq : /* empty */
     | id_seq COMMA IDENTIFIER { install( $3 ); nvars += 1; }
+    | id_seq COMMA IDENTIFIER LBRACKET NUMBER RBRACKET { install( $3, $5 ); nvars += $5; }
 ;
 
 function_vars :
@@ -157,6 +165,7 @@ command :
     | READ IDENTIFIER SEMICOLON { gen_code( READ_INT, context_check( $2 ) ); }
     | WRITE exp SEMICOLON { gen_code( WRITE_INT, 0 ); }
     | IDENTIFIER ASSGNOP exp SEMICOLON { gen_code( STORE, context_check( $1 ) ); }
+    | IDENTIFIER LBRACKET exp RBRACKET ASSGNOP exp SEMICOLON { gen_code( STORE_ARRAY, context_check( $1 ) ); }
     | IF LPAR bool_exp RPAR { $1 = (struct lbs *) newlblrec(); $1->for_jmp_false = reserve_loc(); }
     OPEN_BRACE commands CLOSE_BRACE { $1->for_goto = reserve_loc(); } ELSE {
         back_patch( $1->for_jmp_false, JMP_FALSE, gen_label() );
@@ -196,6 +205,7 @@ bool_exp :
 exp :
     NUMBER { gen_code( LD_INT, $1 ); }
     | IDENTIFIER { gen_code( LD_VAR, context_check( $1 ) ); }
+    | IDENTIFIER LBRACKET exp RBRACKET { gen_code( LD_VAR_ARRAY, context_check( $1 ) ); }
     | exp ADD_ exp { gen_code( ADD, 0 ); }
     | exp SUB_ exp { gen_code( SUB, 0 ); }
     | exp MUL_ exp { gen_code( MULT, 0 ); }
@@ -210,6 +220,9 @@ exp :
             yyerror( message );
         }
         gen_code( CALL, function_offset );
+    }
+    | LENGTH LPAR IDENTIFIER RPAR {
+        gen_code( LD_INT, current_env->get_var_length($3) );
     }
 ;
 

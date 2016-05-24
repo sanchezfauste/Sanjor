@@ -74,6 +74,8 @@ REGULAR EXPRESSIONS defining the tokens for the Simple language
 "%" { return MOD_; }
 "(" { return LPAR; }
 ")" { return RPAR; }
+"[" { return LBRACKET; }
+"]" { return RBRACKET; }
 "==" { return EQ_; }
 "!=" { return NQ_; }
 ">" { return GT_; }
@@ -87,6 +89,7 @@ else { return(ELSE); }
 int { return(INTEGER); }
 read { return(READ); }
 skip { return(SKIP); }
+length { return(LENGTH); }
 while { return(WHILE); }
 write { return(WRITE); }
 "return" { return(RETURN); }
