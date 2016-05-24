@@ -87,6 +87,7 @@ REGULAR EXPRESSIONS defining the tokens for the Simple language
 if { return(IF); }
 else { return(ELSE); }
 int { return(INTEGER); }
+void { return(VOID); }
 read { return(READ); }
 skip { return(SKIP); }
 length { return(LENGTH); }

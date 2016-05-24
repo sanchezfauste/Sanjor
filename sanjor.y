@@ -95,7 +95,7 @@ TOKENS
 %start program
 %token <intval> NUMBER /* Simple integer */
 %token <id> IDENTIFIER /* Simple identifier */
-%token <lbls> IF WHILE INTEGER /* For backpatching labels */
+%token <lbls> IF WHILE INTEGER VOID /* For backpatching labels */
 %token SKIP ELSE OPEN_BRACE CLOSE_BRACE
 %token READ WRITE
 %token ASSGNOP
@@ -194,6 +194,32 @@ command :
             back_patch( $1->for_goto, GOTO, gen_label() );
             free($1);
         }
+    | VOID IDENTIFIER LPAR {
+        $1 = (struct lbs *) newlblrec();
+        $1->for_goto = reserve_loc();
+        current_env = new Environment(current_env);
+        if (!functions->add_function($2, gen_label())) {
+            char message[ 100 ];
+            sprintf( message, "function <%s> is already defined", $2 );
+            yyerror( message );
+        }
+    } function_vars RPAR OPEN_BRACE { gen_code( DATA, nvars ); nvars = 0; }
+        commands CLOSE_BRACE {
+            gen_code( POP, current_env->get_nvars() );
+            gen_code( RET, 0 );
+            current_env = current_env->get_previous_environment();
+            back_patch( $1->for_goto, GOTO, gen_label() );
+            free($1);
+        }
+    | IDENTIFIER LPAR parameters { nvars = 0; } RPAR SEMICOLON{
+        int function_offset = functions->get_function_offset($1);
+        if (function_offset == -1) {
+            char message[ 100 ];
+            sprintf( message, "function <%s> is not defined", $1 );
+            yyerror( message );
+        }
+        gen_code( CALL, function_offset );
+    }
 ;
 
 bool_exp :
