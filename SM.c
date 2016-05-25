@@ -11,7 +11,8 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
 char const *op_name[] = {
 	"halt", "store", "jmp_false", "goto", "call", "ret", "data", "ld_int",
 	"ld_var", "in_int", "out_int", "lt", "eq", "gt", "add", "sub", "mult",
-	"div", "pwr", "pop", "store_tof", "ld_var_array", "store_array"
+	"div", "pwr", "pop", "store_tof", "ld_var_array", "store_array",
+	"write_char", "write_string"
 }; 
 
 /* CODE Array */ 
@@ -68,6 +69,15 @@ void fetch_execute_cycle()
     case READ_INT : printf( "--> Input: " ); 
       scanf( "%d", &stack[ar+ir.arg] ); break; 
     case WRITE_INT : printf( "--> Output: %d\n", stack[top--] ); break; 
+    case WRITE_CHAR : printf( "--> Output: %c\n", stack[top--] ); break;
+    case WRITE_STRING :
+         printf( "--> Output: " );
+         int i;
+         for (i = 0; stack[ar+ir.arg+i] != 0; i++) {
+             printf("%c", stack[ar+ir.arg+i]);
+         }
+         printf( "\n" );
+         break;
     case STORE : stack[ar+ir.arg] = stack[top--]; break; 
     case STORE_ARRAY : stack[ar+ir.arg+stack[top-1]] = stack[top]; top -= 2; break;
 	case STORE_TOF : stack[top+ir.arg] = stack[top]; top--; break; 

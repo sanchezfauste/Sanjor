@@ -44,9 +44,10 @@ Modified by: Jordi Planes, Marc Sánchez, Meritxell Jordana
     /*-------------------------------------------------------------------------
     Install identifier & check if previously defined.
     -------------------------------------------------------------------------*/
-    void install ( char *sym_name, int size = 1, bool is_const = false )
+    void install ( char *sym_name, int size = 1, bool is_const = false,
+        Type type = integer )
     {
-        if (!current_env->add_var(sym_name, size, is_const)) {
+        if (!current_env->add_var(sym_name, size, is_const, type)) {
             char message[ 100 ];
             sprintf( message, "var <%s> is already defined", sym_name );
             yyerror( message );
@@ -93,9 +94,9 @@ SEMANTIC RECORDS
 TOKENS
 =========================================================================*/
 %start program
-%token <intval> NUMBER /* Simple integer */
-%token <id> IDENTIFIER /* Simple identifier */
-%token <lbls> IF WHILE INTEGER VOID /* For backpatching labels */
+%token <intval> NUMBER CHARACTER /* Simple integer */
+%token <id> IDENTIFIER STRING /* Simple identifier */
+%token <lbls> IF WHILE INTEGER CHAR VOID /* For backpatching labels */
 %token SKIP ELSE OPEN_BRACE CLOSE_BRACE
 %token READ WRITE
 %token ASSGNOP
@@ -105,6 +106,7 @@ TOKENS
 %token COMMA SEMICOLON
 %token RETURN LENGTH
 %token CONST
+%token PUT PUTS
 
 /*=========================================================================
 OPERATOR PRECEDENCE
@@ -125,8 +127,11 @@ program :
 
 declarations :
     INTEGER IDENTIFIER { install( $2 ); nvars += 1; } id_seq SEMICOLON
+    | CHAR IDENTIFIER { install( $2, 1, false, character ); nvars += 1; } id_seq_char SEMICOLON
     | CONST INTEGER IDENTIFIER { install( $3, 1, true ); nvars += 1; } SEMICOLON
+    | CONST CHAR IDENTIFIER { install( $3, 1, true, character ); nvars += 1; } SEMICOLON
     | INTEGER IDENTIFIER LBRACKET NUMBER RBRACKET { install( $2, $4 ); nvars += $4; } id_seq SEMICOLON
+    | CHAR IDENTIFIER LBRACKET NUMBER RBRACKET { install( $2, $4, false, character ); nvars += $4; } id_seq_char SEMICOLON
 ;
 
 id_seq : /* empty */
@@ -134,11 +139,24 @@ id_seq : /* empty */
     | id_seq COMMA IDENTIFIER LBRACKET NUMBER RBRACKET { install( $3, $5 ); nvars += $5; }
 ;
 
+id_seq_char : /* empty */
+    | id_seq_char COMMA IDENTIFIER { install( $3, 1, false, character ); nvars += 1; }
+    | id_seq_char COMMA IDENTIFIER LBRACKET NUMBER RBRACKET { install( $3, $5, false, character ); nvars += $5; }
+;
+
 function_vars :
     | INTEGER IDENTIFIER function_vars { install( $2 ); nvars += 1; }
+    | CONST INTEGER IDENTIFIER function_vars { install( $3, 1, true ); nvars += 1; }
+    | CHAR IDENTIFIER function_vars { install( $2, 1, false, character ); nvars += 1; }
+    | CONST CHAR IDENTIFIER function_vars { install( $3, 1, true, character ); nvars += 1; }
     | COMMA INTEGER IDENTIFIER function_vars { install( $3 ); nvars += 1; }
+    | COMMA CONST INTEGER IDENTIFIER function_vars { install( $4, 1, true ); nvars += 1; }
+    | COMMA CHAR IDENTIFIER function_vars { install( $3, 1, false, character ); nvars += 1; }
+    | COMMA CONST CHAR IDENTIFIER function_vars { install( $4, 1, true, character ); nvars += 1; }
     | INTEGER IDENTIFIER LBRACKET NUMBER RBRACKET function_vars { install( $2, $4 ); nvars += $4; }
     | COMMA INTEGER IDENTIFIER LBRACKET NUMBER RBRACKET function_vars { install( $3, $5 ); nvars += $5; }
+    | CHAR IDENTIFIER LBRACKET NUMBER RBRACKET function_vars { install( $2, $4, false, character ); nvars += $4; }
+    | COMMA CHAR IDENTIFIER LBRACKET NUMBER RBRACKET function_vars { install( $3, $5, false, character ); nvars += $5; }
 ;
 
 commands : /* empty */
@@ -186,6 +204,8 @@ command :
     }
     | READ IDENTIFIER SEMICOLON { gen_code( READ_INT, context_check( $2 ) ); }
     | WRITE exp SEMICOLON { gen_code( WRITE_INT, 0 ); }
+    | PUT exp SEMICOLON { gen_code( WRITE_CHAR, 0 ); }
+    | PUTS IDENTIFIER SEMICOLON { gen_code( WRITE_STRING, context_check($2) ); }
     | IDENTIFIER ASSGNOP exp SEMICOLON {
         if (current_env->check_var_const($1) && current_env->check_var_defined($1)) {
             char message[ 100 ];
@@ -194,6 +214,26 @@ command :
         }
         current_env->set_var_defined($1);
         gen_code( STORE, context_check( $1 ) );
+    }
+    | IDENTIFIER ASSGNOP STRING SEMICOLON {
+        if (current_env->check_var_const($1) && current_env->check_var_defined($1)) {
+            char message[ 100 ];
+            sprintf( message, "trying to modify const var! var <%s> is const", $1 );
+            yyerror( message );
+        }
+        if ((int) (strlen($3) + 1) > current_env->get_var_length($1)) {
+            char message[ 100 ];
+            sprintf( message, "trying to store string on var <%s> that exceeds his max length", $1 );
+            yyerror( message );
+        }
+        current_env->set_var_defined($1);
+        int i;
+        for (i = 0; i < (int) strlen($3); i++) {
+            gen_code( LD_INT, $3[i] );
+            gen_code( STORE, context_check( $1 ) + i );
+        }
+        gen_code( LD_INT, 0 );
+        gen_code( STORE, context_check( $1 ) + i );
     }
     | IDENTIFIER LBRACKET exp RBRACKET ASSGNOP exp SEMICOLON { gen_code( STORE_ARRAY, context_check( $1 ) ); }
     | IF LPAR bool_exp RPAR { $1 = (struct lbs *) newlblrec(); $1->for_jmp_false = reserve_loc(); }
@@ -260,6 +300,7 @@ bool_exp :
 
 exp :
     NUMBER { gen_code( LD_INT, $1 ); }
+    | CHARACTER { gen_code( LD_INT, $1 ); }
     | IDENTIFIER { gen_code( LD_VAR, context_check( $1 ) ); }
     | IDENTIFIER LBRACKET exp RBRACKET { gen_code( LD_VAR_ARRAY, context_check( $1 ) ); }
     | exp ADD_ exp { gen_code( ADD, 0 ); }

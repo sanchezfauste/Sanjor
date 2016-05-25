@@ -65,6 +65,15 @@ REGULAR EXPRESSIONS defining the tokens for the Simple language
     yylval.intval = atoi( yytext );
     return(NUMBER);
 }
+\'[^']\' {
+    yylval.intval = (int) yytext[1];
+    return(CHARACTER);
+}
+\"([^\"\\]|\\\"|\\)*\" {
+	yytext[yyleng - 1] = '\0';
+	yylval.id = (char *) strdup(&yytext[1]);
+	return(STRING);
+}
 "{" { return(OPEN_BRACE); }
 "}" { return(CLOSE_BRACE); }
 "+" { return ADD_; }
@@ -87,6 +96,9 @@ REGULAR EXPRESSIONS defining the tokens for the Simple language
 if { return(IF); }
 else { return(ELSE); }
 int { return(INTEGER); }
+char { return(CHAR); }
+put { return(PUT); }
+puts { return(PUTS); }
 const { return(CONST); }
 void { return(VOID); }
 read { return(READ); }
