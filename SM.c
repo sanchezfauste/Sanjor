@@ -12,7 +12,7 @@ char const *op_name[] = {
 	"halt", "store", "jmp_false", "goto", "call", "ret", "data", "ld_int",
 	"ld_var", "in_int", "out_int", "lt", "eq", "gt", "add", "sub", "mult",
 	"div", "pwr", "pop", "store_tof", "ld_var_array", "store_array",
-	"write_char", "write_string"
+	"write_char", "write_string", "nq", "le", "ge"
 }; 
 
 /* CODE Array */ 
@@ -104,6 +104,18 @@ void fetch_execute_cycle()
 	stack[--top] = 1; 
       else stack[--top] = 0; 
       break; 
+    case NQ :
+        if ( stack[top-1] != stack[top] ) stack[--top] = 1;
+        else stack[--top] = 0;
+        break;
+    case LE :
+        if ( stack[top-1] <= stack[top] ) stack[--top] = 1;
+        else stack[--top] = 0;
+        break;
+    case GE :
+        if ( stack[top-1] >= stack[top] ) stack[--top] = 1;
+        else stack[--top] = 0;
+        break;
     case EQ : if ( stack[top-1] == stack[top] ) 
 	stack[--top] = 1; 
       else stack[--top] = 0; 

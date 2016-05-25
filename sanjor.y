@@ -296,6 +296,9 @@ bool_exp :
     exp LT_ exp { gen_code( LT, 0 ); }
     | exp EQ_ exp { gen_code( EQ, 0 ); }
     | exp GT_ exp { gen_code( GT, 0 ); }
+    | exp NQ_ exp { gen_code( NQ, 0 ); }
+    | exp LE_ exp { gen_code( LE, 0 ); }
+    | exp GE_ exp { gen_code( GE, 0 ); }
 ;
 
 exp :
