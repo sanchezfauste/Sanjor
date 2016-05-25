@@ -137,6 +137,8 @@ id_seq : /* empty */
 function_vars :
     | INTEGER IDENTIFIER function_vars { install( $2 ); nvars += 1; }
     | COMMA INTEGER IDENTIFIER function_vars { install( $3 ); nvars += 1; }
+    | INTEGER IDENTIFIER LBRACKET NUMBER RBRACKET function_vars { install( $2, $4 ); nvars += $4; }
+    | COMMA INTEGER IDENTIFIER LBRACKET NUMBER RBRACKET function_vars { install( $3, $5 ); nvars += $5; }
 ;
 
 commands : /* empty */
@@ -148,12 +150,30 @@ parameters :
         gen_code( STORE_TOF, nvars + 3 );
         nvars += 1;
     }
+    | param_list IDENTIFIER LBRACKET RBRACKET {
+        int i;
+        for (i = 0; i < current_env->get_var_length($2); i++) {
+            gen_code( LD_INT, i );
+            gen_code( LD_VAR_ARRAY, context_check( $2 ) );
+            gen_code( STORE_TOF, nvars + 3 );
+            nvars += 1;
+        }
+    }
 ;
 
 param_list : /* empty */
     | param_list exp COMMA {
         gen_code( STORE_TOF, nvars + 3 );
         nvars += 1;
+    }
+    | param_list IDENTIFIER LBRACKET RBRACKET COMMA {
+        int i;
+        for (i = 0; i < current_env->get_var_length($2); i++) {
+            gen_code( LD_INT, i );
+            gen_code( LD_VAR_ARRAY, context_check( $2 ) );
+            gen_code( STORE_TOF, nvars + 3 );
+            nvars += 1;
+        }
     }
 ;
 
