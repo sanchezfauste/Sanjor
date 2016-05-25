@@ -12,7 +12,7 @@ int Environment::get_var(const char *var, int offset) {
 	return vars[string(var)]->offset + offset;
 }
 
-bool Environment::add_var(const char *var, int size, bool is_const) {
+bool Environment::add_var(const char *var, int size, bool is_const, Type type) {
 	if (vars.count(string(var))) {
 		return false;
 	} else {
@@ -20,6 +20,7 @@ bool Environment::add_var(const char *var, int size, bool is_const) {
 		v->offset = nvars;
 		v->size = size;
 		v->is_const = is_const;
+		v->type = type;
 		nvars += size;
 		vars[string(var)] = v;
 		return true;

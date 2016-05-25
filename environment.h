@@ -6,11 +6,16 @@
 
 using namespace std;
 
+enum Type {
+	integer, character
+};
+
 typedef struct Var {
 	int offset;
 	int size;
 	bool is_const;
 	bool is_defined;
+	Type type;
 } Var;
 
 class Environment {
@@ -23,7 +28,8 @@ public:
 
 	Environment(Environment *previous_env);
 	int get_var(const char *var, int offset = 0);
-	bool add_var(const char *var, int size = 1, bool is_const = false);
+	bool add_var(const char *var, int size = 1, bool is_const = false,
+		Type type = integer);
 	bool check_var(const char *var);
 	bool check_var_offset(const char *var, int offset);
 	bool check_var_const(const char *var);
