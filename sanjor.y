@@ -209,6 +209,14 @@ command :
     | WRITE exp SEMICOLON { gen_code( WRITE_INT, 0 ); }
     | PUT exp SEMICOLON { gen_code( WRITE_CHAR, 0 ); }
     | PUTS IDENTIFIER SEMICOLON { gen_code( WRITE_STRING, context_check($2) ); }
+    | PUTS STRING SEMICOLON {
+        int i;
+        for (i = 0; i < (int) strlen($2); i++) {
+            gen_code( LD_INT, $2[i] );
+        }
+        gen_code( LD_INT, 0 );
+        gen_code( WRITE_STRING, current_env->get_nvars() );
+    }
     | IDENTIFIER ASSGNOP exp SEMICOLON {
         if (current_env->check_var_const($1) && current_env->check_var_defined($1)) {
             char message[ 100 ];
