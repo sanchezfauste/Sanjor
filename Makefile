@@ -28,21 +28,25 @@ assembler : assembler.l SM.c CG.c ST.c
 	$(RM) assembler.c
 
 clean:
-	rm -f $(TARGET) VM dissas assembler $(TARGET).tab.c $(TARGET).tab.h lex.yy.c $(TARGET).output *.o *~ *.vm
+	rm -f $(TARGET) VM dissas assembler $(TARGET).tab.c $(TARGET).tab.h lex.yy.c $(TARGET).output *.o *~ *.vm tests/*/*.vm
 
 
-TESTS = $(wildcard *.sz)
-ERRORS = $(wildcard *.error)
+TESTS = $(wildcard tests/correct/*.sj)
+ERRORS = $(wildcard tests/error/*.sj)
 
-test: $(TARGET)
+test: $(TARGET) VM
 	@echo "#### Begin Test" $(TARGET)
 	@for t in $(TESTS); do \
 		echo "#### Testing" $$t ; \
-		./$(TARGET) $$t `basename $$t .sz`.vm; \
+		./$(TARGET) $$t tests/correct/`basename $$t .sj`.vm; \
+		./VM tests/correct/`basename $$t .sj`.vm; \
 	done
 	@echo "#### Ending Test"
 
-error: $(TARGET)
+error: $(TARGET) VM
+	@echo "#### Begin Error Test" $(TARGET)
 	@for t in $(ERRORS); do \
-		./$(TARGET) $$t; \
+		echo "#### Testing" $$t ; \
+		./$(TARGET) $$t tests/error/`basename $$t .sj`.vm; \
 	done
+	@echo "#### Ending Error Test"
