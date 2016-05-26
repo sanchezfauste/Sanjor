@@ -76,7 +76,6 @@ void fetch_execute_cycle()
          for (i = 0; stack[ar+ir.arg+i] != 0; i++) {
              printf("%c", stack[ar+ir.arg+i]);
          }
-         top -= i + 1;
          printf( "\n" );
          break;
     case STORE : stack[ar+ir.arg] = stack[top--]; break; 
