@@ -107,12 +107,15 @@ TOKENS
 %token RETURN LENGTH
 %token CONST
 %token PUT PUTS
+%token AND_ OR_
 
 /*=========================================================================
 OPERATOR PRECEDENCE
 =========================================================================*/
 %left SUB_ ADD_
 %left MUL_ DIV_ MOD_
+%left OR_
+%left AND_
 %right PWR_
 
 /*=========================================================================
@@ -299,6 +302,9 @@ bool_exp :
     | exp NQ_ exp { gen_code( NQ, 0 ); }
     | exp LE_ exp { gen_code( LE, 0 ); }
     | exp GE_ exp { gen_code( GE, 0 ); }
+    | LPAR bool_exp RPAR
+    | bool_exp AND_ bool_exp { gen_code( AND, 0 ); }
+    | bool_exp OR_ bool_exp { gen_code( OR, 0 ); }
 ;
 
 exp :

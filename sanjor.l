@@ -91,6 +91,8 @@ REGULAR EXPRESSIONS defining the tokens for the Simple language
 "<" { return LT_; }
 ">=" { return GE_; }
 "<=" { return LE_; }
+"&&" { return AND_; }
+"||" { return OR_; }
 "," { return(COMMA); }
 ";" { return(SEMICOLON); }
 if { return(IF); }
