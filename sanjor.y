@@ -216,6 +216,7 @@ command :
         }
         gen_code( LD_INT, 0 );
         gen_code( WRITE_STRING, current_env->get_nvars() );
+        gen_code( POP, strlen($2) + 1 );
     }
     | IDENTIFIER ASSGNOP exp SEMICOLON {
         if (current_env->check_var_const($1) && current_env->check_var_defined($1)) {
