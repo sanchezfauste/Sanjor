@@ -38,3 +38,6 @@ lex.yy.c
 sanjor.output
 sanjor.tab.c
 sanjor.tab.h
+
+# PDF
+*.pdf
